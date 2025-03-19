@@ -1,0 +1,7 @@
+---
+title: "Gradient Descent"
+author: "Matthew Hanani, William Niamessou, Ethan Stubberfield"
+date: '`r Sys.Date()`'
+output: pdf_document
+---
+
