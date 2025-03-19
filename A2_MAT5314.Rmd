@@ -1,0 +1,88 @@
+---
+title: 'MAT5314B: Assignment 2'
+author: "Matthew Hanani - 300442717"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Q1
+```{r}
+set.seed(42)
+df = read.csv('A2_data.txt', header=TRUE)
+Y <- as.matrix(df$Y)
+X <- as.matrix(subset(df, select=-Y))
+X <- scale(X, scale=FALSE)
+tau <- max(unlist(eigen(t(X) %*% X)))
+X <- X/sqrt(tau)
+Y <- Y/sqrt(tau)
+max(unlist(eigen(t(X) %*% X)))
+```
+After centering the data and scaling based on the largest eigenvalue of $X^TX$, the new largest eigenvalue of the scaled $X^TX$ is 1.
+
+# Q2
+```{r}
+alpha=3.7
+lambda=0.01
+K=1000
+p=1000
+
+S <- function(lambda, t){
+  if(t > lambda){
+    return(t-lambda)
+  } else if(t < -lambda){
+    return(t+lambda)
+  } else{
+    return(0)
+  }
+}
+
+SCAD <- function(lambda, alpha, t){
+  if(abs(t) < 2*lambda){
+    return(S(lambda, t))
+  } else if(abs(t) > alpha*lambda){
+    return(t)
+  } else{
+    return(((alpha-1)*t - alpha*lambda*sign(t))/(alpha-2))
+  }
+}
+
+Sigma = t(X) %*% X
+
+#B0 = 0
+ITM_0 = matrix(0, nrow=1000, ncol=1000)
+Bk = c(rep(0,p))
+for(i in 1:K){
+  t = (((diag(p) - Sigma) %*% Bk) + (t(X) %*% Y))
+  for(j in 1:p){
+    ITM_0[i,j] = SCAD(lambda, alpha, t[j])
+  }
+  Bk = ITM_0[i,]
+}
+plot(1:K, rowSums(abs(ITM_0)), ylab='L1 Norm of Beta', xlab='Index')
+which(ITM_0[1000,] != 0)
+```
+
+After performing ITM for 1000 iterations using the zero-vector as our start, we have selected the variables V4, V54, V59, V80, V113, V127, V152, V200, V207, V259, V284, V305, V328, V352, V373, V416, V439, V600, V648, V669, V733, V761, V770, V788, V791, V815, V826, V859, V885, V963, V966, V977.
+
+```{r}
+library(glmnet)
+#B0 = (3,3,3,3,0,...,0)
+ITM_3 = matrix(0, nrow=1000, ncol=1000)
+Bk = c(rep(3,4), rep(0,p-4))
+for(i in 1:K){
+  t = (((diag(p) - Sigma) %*% Bk) + (t(X) %*% Y))
+  for(j in 1:p){
+    ITM_3[i,j] = SCAD(lambda, alpha, t[j])
+  }
+  Bk = ITM_3[i,]
+}
+plot(1:K, rowSums(abs(ITM_3)), ylab='L1 Norm of Beta', xlab='Index')
+which(ITM_3[1000,] != 0)
+```
+
+Now when we use the vector where the first four entries are 3 and the rest are 0, we get only the first four variables are selected after 1000 iterations.
+
+I believe the first solution, where $\beta^{(0)} = \bf{0}$, is the solution we should choose. We saw from the first ITM that only the fourth variable was not thresholded out of the first four. Setting the first four variables as non-zero for this may have introduced some bias along the ITM process since we select just those exact same first four variables after the 1000 iterations of the second ITM. Thus, I would choose the first solution over the second as it doesn't appear to be negatively influenced by the choice of $\beta^{(0)}$ and is likely a more accurate model selection than the second ITM process.
