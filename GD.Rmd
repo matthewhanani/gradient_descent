@@ -6,3 +6,61 @@ output: pdf_document
 ---
 
 # edit
+```{r}
+Gradient_descent = function(Y,X){
+X = as.matrix(X); X = cbind(1, X)
+Y = as.vector(Y)
+
+#We set our matrix of coefficients beta
+beta_hat = matrix(0, nrow = 1, ncol = ncol(X))
+k = 0; max_iterations = 10**(5)
+stop = FALSE
+
+while(k < max_iterations & stop == FALSE){
+#The gradient of the loss function
+
+Y_hat = X %*% beta_hat[1,]
+gradient = -2 * t(X) %*% (Y - Y_hat)
+lambda = 1
+
+#Now we apply the Armijo condition to reduce the lambda
+#The reduction factor is 0.5 and the control factor is 0.0001
+
+while (TRUE) {
+new_beta_hat = beta_hat[1,] - lambda * gradient[, 1]
+Y_hat_new = X %*% new_beta_hat
+if (sum((Y - Y_hat_new)**2) <= sum((Y - Y_hat)**2) - 0.0001 * lambda * sum(gradient**2)) {
+break
+} else {
+lambda = lambda * (1/2)
+}
+}
+
+#We can now apply the gradient descent algorithm with the
+#optimal lambda for one iteration
+new_beta_hat = beta_hat - lambda * gradient[,1]
+stop = sum(abs(new_beta_hat - beta_hat)) < 10**(-10)
+beta_hat = new_beta_hat
+k = k + 1
+}
+
+return(new_beta_hat)
+}
+
+```
+
+
+```{r}
+set.seed(123)
+Z = rnorm(100,0,1)
+X = matrix(rnorm(50*100, 0, 1), nrow = 100, ncol = 50)
+Y = rnorm(100, mean = 2, sd = 2) + Z
+model = Gradient_descent(Y,X)
+model
+```
+
+
+```{r}
+model2 = lm(Y~X)
+model2$coefficients
+```
